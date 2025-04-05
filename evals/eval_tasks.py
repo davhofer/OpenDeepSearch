@@ -31,7 +31,9 @@ APPEND_ANSWER_LOCK = threading.Lock()
 
 
 def parse_arguments():
-    parser = argparse.ArgumentParser(description="Runs an agent powered by the given model on smolagent benchmark.")
+    parser = argparse.ArgumentParser(
+        description="Runs an agent powered by the given model on smolagent benchmark."
+    )
     parser.add_argument(
         "--date",
         type=str,
@@ -42,7 +44,10 @@ def parse_arguments():
         "--eval-tasks",
         type=str,
         nargs="+",
-        default=["./evals/datasets/frames_test_set.csv", "./evals/datasets/simple_qa_test_set.csv"],
+        default=[
+            "./evals/datasets/frames_test_set.csv",
+            "./evals/datasets/simple_qa_test_set.csv",
+        ],
         help="List of evaluation task paths",
     )
     parser.add_argument(
@@ -93,6 +98,7 @@ def load_eval_dataset(eval_tasks: list):
         df = pd.read_csv(task_path)
         dataset = Dataset.from_pandas(df)
         eval_ds[task_name] = dataset
+
     return eval_ds
 
 
@@ -120,19 +126,30 @@ def run_with_timeout(func, timeout):
             return "Timed Out"
 
 
-def answer_single_question(example, model, answers_file, action_type, search_model_id=None):
+def answer_single_question(
+    example, model, answers_file, action_type, search_model_id=None
+):
     if action_type == "vanilla":
         agent = model
     elif action_type == "codeact":
         agent = CodeAgent(
-            tools=[OpenDeepSearchTool(model_name=search_model_id or model.model_id)],
+            tools=[
+                OpenDeepSearchTool(
+                    model_name=search_model_id or model.model_id, reranker="jina"
+                )
+            ],
             model=model,
             additional_authorized_imports=["numpy"],
             max_steps=15,
         )
     elif action_type == "tool-calling":
         agent = ToolCallingAgent(
-            tools=[OpenDeepSearchTool(model_name=search_model_id or model.model_id), PythonInterpreterTool()],
+            tools=[
+                OpenDeepSearchTool(
+                    model_name=search_model_id or model.model_id, reranker="jina"
+                ),
+                PythonInterpreterTool(),
+            ],
             model=model,
             additional_authorized_imports=["numpy"],
             max_steps=15,
@@ -144,13 +161,17 @@ def answer_single_question(example, model, answers_file, action_type, search_mod
 
     try:
         if action_type == "vanilla":
+
             def get_vanilla_response():
                 response = agent([{"role": "user", "content": augmented_question}])
                 return response.content, agent.last_output_token_count
-            
-            answer, token_count = run_with_timeout(get_vanilla_response, TIMEOUT_SECONDS)
+
+            answer, token_count = run_with_timeout(
+                get_vanilla_response, TIMEOUT_SECONDS
+            )
             intermediate_steps = answer
         else:
+
             def get_agent_response():
                 response = str(agent.run(augmented_question))
                 token_count = agent.monitor.get_total_token_counts()
@@ -159,8 +180,10 @@ def answer_single_question(example, model, answers_file, action_type, search_mod
                     if isinstance(step, ActionStep):
                         step.agent_memory = None
                 return response, token_count, str(agent.memory.steps)
-            
-            answer, token_count, intermediate_steps = run_with_timeout(get_agent_response, TIMEOUT_SECONDS)
+
+            answer, token_count, intermediate_steps = run_with_timeout(
+                get_agent_response, TIMEOUT_SECONDS
+            )
 
         end_time = time.time()
     except Exception as e:
@@ -193,31 +216,48 @@ def answer_questions(
 ):
     date = date or datetime.date.today().isoformat()
     model_id = model.model_id
-    
+
     # Create directory structure: output/model_id/action_type/task
-    model_dir = model_id.replace('/', '__')
-    
+    model_dir = model_id.replace("/", "__")
+
     for task in eval_ds:
         task_dir = os.path.join(output_dir, model_dir, action_type, task)
         os.makedirs(task_dir, exist_ok=True)
-        
+
         for trial in range(num_trials):
             file_name = f"{task_dir}/{model_id.replace('/', '__')}__{action_type}__{task}__trial{trial}.jsonl"
-            print(f"Starting processing trial {trial + 1}/{num_trials} and writing output to '{file_name}'")
+            print(
+                f"Starting processing trial {trial + 1}/{num_trials} and writing output to '{file_name}'"
+            )
             answered_questions = []
             if os.path.exists(file_name):
                 with open(file_name, "r") as f:
                     for line in f:
                         answered_questions.append(json.loads(line)["original_question"])
-            examples_todo = [example for example in eval_ds[task] if example["question"] not in answered_questions]
+            examples_todo = [
+                example
+                for example in eval_ds[task]
+                if example["question"] not in answered_questions
+            ]
             print(f"Launching {parallel_workers} parallel workers.")
 
             with ThreadPoolExecutor(max_workers=parallel_workers) as exe:
                 futures = [
-                    exe.submit(answer_single_question, example, model, file_name, action_type, search_model_id) 
+                    exe.submit(
+                        answer_single_question,
+                        example,
+                        model,
+                        file_name,
+                        action_type,
+                        search_model_id,
+                    )
                     for example in examples_todo
                 ]
-                for f in tqdm(as_completed(futures), total=len(examples_todo), desc="Processing tasks"):
+                for f in tqdm(
+                    as_completed(futures),
+                    total=len(examples_todo),
+                    desc="Processing tasks",
+                ):
                     f.result()
 
             print("All tasks processed.")
