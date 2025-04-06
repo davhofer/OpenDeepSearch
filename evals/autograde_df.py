@@ -50,8 +50,9 @@ def autograde_df(df_path, num_cpus=4):
     results.sort(key=lambda x: x[0])
     final_grades = [grade for _, grade in results]
 
-    print("[DEBUG] final grades:")
-    print(final_grades)
+    print("[DEBUG] final grades")
+    acc = len(list(filter(lambda x: x == "A", final_grades))) / len(final_grades)
+    print("accuracy:", acc)
 
     # Add the grades as a new column
     df["final_grade"] = final_grades
