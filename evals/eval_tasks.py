@@ -93,6 +93,12 @@ def parse_arguments():
         default=1,
         help="Number of trials to run for each evaluation",
     )
+    parser.add_argument(
+        "--supervisor",
+        type=bool,
+        default=False,
+        help="Use a supervisor to aggregate the ModelEnsemble results",
+    )
     return parser.parse_args()
 
 
@@ -103,7 +109,6 @@ def load_eval_dataset(eval_tasks: list):
         df = pd.read_csv(task_path)
         dataset = Dataset.from_pandas(df)
         eval_ds[task_name] = dataset
-
     return eval_ds
 
 
@@ -172,6 +177,9 @@ def answer_single_question(
         model_id="accounts/fireworks/models/llama-v3p3-70b-instruct",
         temperature=0.7,
     )
+
+    if isinstance(model, ModelEnsemble):
+        model.set_user_query(augmented_question)
 
     start_time = time.time()
     TIMEOUT_SECONDS = 300  # 5 minutes timeout
@@ -306,6 +314,7 @@ if __name__ == "__main__":
                 "fireworks_ai/accounts/fireworks/models/qwen2p5-vl-32b-instruct",
                 "fireworks_ai/accounts/fireworks/models/qwen2-vl-72b-instruct",
             ],
+            supervisor=args.supervisor,
         )
     else:
         model = HfApiModel(args.model_id, provider="together", max_tokens=8192)
