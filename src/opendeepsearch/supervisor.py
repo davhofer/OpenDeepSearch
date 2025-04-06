@@ -24,8 +24,7 @@ User Query:
 {user_query}
 
 Model Responses:
-{"\n* * * * *\n".join(model_responses)}
-"""
+""" + "\n* * * * *\n".join(model_responses)
 
 
 def run_supervisor(
