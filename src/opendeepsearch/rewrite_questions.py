@@ -20,4 +20,7 @@ def rewrite(query: str, model_id, **kwargs):
         }],
         **kwargs
         )
-    return response.choices[0].message.content 
+    return response.choices[0].message.content
+
+def build_augmented_prompt(query: str, augmented_query: str):
+    return f"Input Query: {query}\n{augmented_query}"

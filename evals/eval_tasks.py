@@ -12,7 +12,7 @@ import pandas as pd
 from datasets import Dataset
 from dotenv import load_dotenv
 from tqdm import tqdm
-from opendeepsearch import OpenDeepSearchTool, rewrite#, build_augmented_prompt
+from opendeepsearch import OpenDeepSearchTool, rewrite, build_augmented_prompt
 
 from smolagents import (
     AgentError,
