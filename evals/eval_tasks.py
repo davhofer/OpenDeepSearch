@@ -12,7 +12,7 @@ import pandas as pd
 from datasets import Dataset
 from dotenv import load_dotenv
 from tqdm import tqdm
-from opendeepsearch import OpenDeepSearchTool
+from opendeepsearch import OpenDeepSearchTool, rewrite#, build_augmented_prompt
 
 from smolagents import (
     AgentError,
@@ -154,8 +154,11 @@ def answer_single_question(
             additional_authorized_imports=["numpy"],
             max_steps=15,
         )
-
-    augmented_question = example["question"]
+    
+    augmented_question = rewrite(example["question"], 
+                                 model_id = "accounts/fireworks/models/llama-v3p3-70b-instruct",
+                                 temperature = 0.7)
+    
     start_time = time.time()
     TIMEOUT_SECONDS = 300  # 5 minutes timeout
 
@@ -163,7 +166,7 @@ def answer_single_question(
         if action_type == "vanilla":
 
             def get_vanilla_response():
-                response = agent([{"role": "user", "content": augmented_question}])
+                response = agent([{"role": "user", "content": example["question"]}])
                 return response.content, agent.last_output_token_count
 
             answer, token_count = run_with_timeout(
@@ -173,7 +176,8 @@ def answer_single_question(
         else:
 
             def get_agent_response():
-                response = str(agent.run(augmented_question))
+                new_prompt = build_augmented_prompt(example["question"], augmented_question)
+                response = str(agent.run(new_prompt))
                 token_count = agent.monitor.get_total_token_counts()
                 # Remove memory from logs to make them more compact.
                 for step in agent.memory.steps:
