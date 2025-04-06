@@ -12,8 +12,12 @@ import pandas as pd
 from datasets import Dataset
 from dotenv import load_dotenv
 from tqdm import tqdm
-from opendeepsearch.model_ensemble import ModelEnsemble
-from opendeepsearch import OpenDeepSearchTool, rewrite, build_augmented_prompt
+from opendeepsearch import (
+    OpenDeepSearchTool,
+    rewrite,
+    build_augmented_prompt,
+    ModelEnsemble,
+)
 
 from smolagents import (
     AgentError,
@@ -156,18 +160,19 @@ def answer_single_question(
             max_steps=15,
         )
 
-
     new_system_prompt_instruction = 'You will be given the user task and at most three additional reformulations equivalent to this task. You should solve the user task as best you can, and use the additional reformulations, as needed. You will receive the user task starting with: "Input Query: ..." and the additional reformulations starts with: "Rephrased Versions: ...", where the additional reformulations are enumerated with a "-".'
 
     agent.system_prompt = agent.system_prompt.replace(
         "You will be given a task to solve as best you can.",
         new_system_prompt_instruction,
     )
-    
-    augmented_question = rewrite(example["question"], 
-                                 model_id = "accounts/fireworks/models/llama-v3p3-70b-instruct",
-                                 temperature = 0.7)
-    
+
+    augmented_question = rewrite(
+        example["question"],
+        model_id="accounts/fireworks/models/llama-v3p3-70b-instruct",
+        temperature=0.7,
+    )
+
     start_time = time.time()
     TIMEOUT_SECONDS = 300  # 5 minutes timeout
 
@@ -185,7 +190,9 @@ def answer_single_question(
         else:
 
             def get_agent_response():
-                new_prompt = build_augmented_prompt(example["question"], augmented_question)
+                new_prompt = build_augmented_prompt(
+                    example["question"], augmented_question
+                )
                 response = str(agent.run(new_prompt))
                 token_count = agent.monitor.get_total_token_counts()
                 # Remove memory from logs to make them more compact.
@@ -297,8 +304,8 @@ if __name__ == "__main__":
                 "fireworks_ai/accounts/fireworks/models/llama-v3p1-70b-instruct",
                 "fireworks_ai/accounts/fireworks/models/llama-v3p3-70b-instruct",
                 "fireworks_ai/accounts/fireworks/models/qwen2p5-vl-32b-instruct",
-                "fireworks_ai/accounts/fireworks/models/qwen2-vl-72b-instruct"
-                ]
+                "fireworks_ai/accounts/fireworks/models/qwen2-vl-72b-instruct",
+            ],
         )
     else:
         model = HfApiModel(args.model_id, provider="together", max_tokens=8192)
