@@ -165,6 +165,9 @@ def answer_single_question(
             max_steps=15,
         )
 
+    # enable planning (first turn of agent only)
+    # agent.planning_interval = 100
+
     new_system_prompt_instruction = 'You will be given the user task and at most three additional reformulations equivalent to this task. You should solve the user task as best you can, and use the additional reformulations, as needed. You will receive the user task starting with: "Input Query: ..." and the additional reformulations starts with: "Rephrased Versions: ...", where the additional reformulations are enumerated with a "-".'
 
     agent.system_prompt = agent.system_prompt.replace(
