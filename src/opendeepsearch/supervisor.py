@@ -1,4 +1,4 @@
-from random import random
+import random
 from smolagents import ChatMessage
 from fireworks.client import Fireworks
 import os
