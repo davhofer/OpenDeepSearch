@@ -49,7 +49,7 @@ def run_supervisor(
     )
 
     try:
-        idx = int(response.choices[0].message.content)
+        idx = int(response.choices[0].message.content.strip())
     except:
         idx = random.randint(0, len(model_responses) - 1)
     return model_responses[idx]
