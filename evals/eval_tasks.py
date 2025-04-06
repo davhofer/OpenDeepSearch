@@ -12,6 +12,7 @@ import pandas as pd
 from datasets import Dataset
 from dotenv import load_dotenv
 from tqdm import tqdm
+from opendeepsearch.model_ensemble import ModelEnsemble
 from opendeepsearch import OpenDeepSearchTool, rewrite, build_augmented_prompt
 
 from smolagents import (
@@ -60,7 +61,7 @@ def parse_arguments():
         "--model-type",
         type=str,
         default="LiteLLMModel",
-        choices=["LiteLLMModel", "HfApiModel"],
+        choices=["LiteLLMModel", "HfApiModel", "ModelEnsemble"],
         help="The model type to use (LiteLLMModel or HfApiModel)",
     )
     parser.add_argument(
@@ -286,6 +287,18 @@ if __name__ == "__main__":
             max_completion_tokens=8192,
             temperature=0.2,
             # api_key=os.getenv("OPENROUTER_API_KEY"),
+        )
+    elif args.model_type == "ModelEnsemble":
+        model = ModelEnsemble(
+            max_completion_tokens=8192,
+            temperature=0.2,
+            model_id=[
+                "fireworks_ai/accounts/fireworks/models/qwq-32b",
+                "fireworks_ai/accounts/fireworks/models/llama-v3p1-70b-instruct",
+                "fireworks_ai/accounts/fireworks/models/llama-v3p3-70b-instruct",
+                "fireworks_ai/accounts/fireworks/models/qwen2p5-vl-32b-instruct",
+                "fireworks_ai/accounts/fireworks/models/qwen2-vl-72b-instruct"
+                ]
         )
     else:
         model = HfApiModel(args.model_id, provider="together", max_tokens=8192)
