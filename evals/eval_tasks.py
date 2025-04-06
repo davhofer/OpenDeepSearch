@@ -154,6 +154,14 @@ def answer_single_question(
             additional_authorized_imports=["numpy"],
             max_steps=15,
         )
+
+
+    new_system_prompt_instruction = 'You will be given the user task and at most three additional reformulations equivalent to this task. You should solve the user task as best you can, and use the additional reformulations, as needed. You will receive the user task starting with: "Input Query: ..." and the additional reformulations starts with: "Rephrased Versions: ...", where the additional reformulations are enumerated with a "-".'
+
+    agent.system_prompt = agent.system_prompt.replace(
+        "You will be given a task to solve as best you can.",
+        new_system_prompt_instruction,
+    )
     
     augmented_question = rewrite(example["question"], 
                                  model_id = "accounts/fireworks/models/llama-v3p3-70b-instruct",
